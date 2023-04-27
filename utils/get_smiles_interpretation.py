@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 import networkx as nx
 from rdkit import Chem
 from karateclub import Graph2Vec
@@ -29,7 +28,7 @@ def smiles_to_graph(smiles: str) -> nx.Graph:
 def get_graph_vector(graph: nx.Graph) -> np.ndarray:
     model = Graph2Vec()
 
-    model.fit(graph)
+    model.fit([graph])
     graph_vec = model.get_embedding()
 
     return np.array(graph_vec)
