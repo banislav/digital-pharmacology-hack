@@ -1,3 +1,4 @@
+import re
 from typing import Dict, Any
 from bs4 import BeautifulSoup
 from time import sleep
@@ -14,16 +15,29 @@ def get_page_content(url: str) -> str:
     return content
 
 
-def find_toxicity(content: str) -> Dict[str, Dict[Any, Any]]:
+def find_toxicity(content: str) -> Dict[str, Dict[str, int]]:
     toxicity_dict = {'Human-Toxicity': {}, 'Non-Human-Toxicity': {}}
 
     soup = BeautifulSoup(content, features='lxml')
     human_tv = soup.find_all('section', attrs={'id': 'Human-Toxicity-Values'})
     nonhuman_tv = soup.find_all('section', attrs={'id': 'Non-Human-Toxicity-Values'})
 
-    toxicity_dict['Human-Toxicity'] = \
-        [ht.find_all('div', attrs={'class': 'section-content-item'})[0].find_all('p')[0].text for ht in human_tv]
-    toxicity_dict['Non-Human-Toxicity'] = \
-        [nht.find_all('div', attrs={'class': 'section-content-item'})[0].find_all('p')[0].text for nht in nonhuman_tv]
+    human_tv = [ht.find_all('div', attrs={'class': 'section-content-item'}) for ht in human_tv]
+    human_tv = [ht.find_all('p')[0].text for ht in human_tv[0]]
+
+    nonhuman_tv = [nht.find_all('div', attrs={'class': 'section-content-item'}) for nht in nonhuman_tv]
+    nonhuman_tv = [ht.find_all('p')[0].text for ht in nonhuman_tv[0]]
+
+    for tv in human_tv:
+        match = re.findall(r'([A-Z][A-Z]50 \D*)\s+(\d+)\s+[M|m][G|g]/[K|k][G|g]', tv)
+        if match:
+            key, val = match[0]
+            toxicity_dict['Human-Toxicity'][key] = int(val)
+
+    for tv in nonhuman_tv:
+        match = re.findall(r'([A-Z][A-Z]50 \D*)\s+(\d+)\s+[M|m][G|g]/[K|k][G|g]', tv)
+        if match:
+            key, val = match[0]
+            toxicity_dict['Non-Human-Toxicity'][key] = int(val)
 
     return toxicity_dict
