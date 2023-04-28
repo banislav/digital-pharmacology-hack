@@ -6,11 +6,13 @@ from typing import List
 
 import selenium
 from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 
 TIME_TO_LOAD_PAGE = 3
-SOURCE_URL = "https://pubchem.ncbi.nlm.nih.gov/"
+PUBCHEM_SOURCE_URL = "https://pubchem.ncbi.nlm.nih.gov/"
+NCCOS_SOURCE_PAGE = "https://products.coastalscience.noaa.gov/peiar/search.aspx"
 
 
 def get_search_page(driver: selenium.webdriver, query: str) -> List[str]:
@@ -19,7 +21,7 @@ def get_search_page(driver: selenium.webdriver, query: str) -> List[str]:
     }
 
     encoded_params = urllib.parse.urlencode(params)
-    url = SOURCE_URL + "#" + encoded_params
+    url = PUBCHEM_SOURCE_URL + "#" + encoded_params
 
     driver.get(url)
     sleep(2.5)
@@ -75,3 +77,54 @@ def find_toxicity(content: str) -> Dict[str, Dict[str, int]]:
             toxicity_dict['Non-Human-Toxicity'][key] = int(val)
 
     return toxicity_dict
+
+
+def extract_table_data(page_source:str):
+    pass
+
+
+def parse_nccos(driver: selenium.webdriver):
+    driver.get(NCCOS_SOURCE_PAGE)
+
+    query_from_select = driver.find_element(By.XPATH, '//*[@id="middleplaceholder_maincontent_ddl1"]')
+    query_from_select = Select(query_from_select)
+
+    query_from_select.select_by_value('2')
+
+    drug_category_select = driver.find_element(By.XPATH, '//*[@id="middleplaceholder_maincontent_ddl3"]')
+    drug_category_select = Select(drug_category_select)
+    drug_category_options = list(drug_category_select.options)[1:]
+
+    for drug_category in drug_category_options:
+        drug_category_select.select_by_value(drug_category.get_attribute('value'))
+
+        sleep(0.5)
+
+        sub_category_select = driver.find_element(By.XPATH, '//*[@id="middleplaceholder_maincontent_ddlb2"]')
+
+        if sub_category_select:
+            sub_category_select = Select(sub_category_select)
+            sub_category_options = list(sub_category_select.options)[1:]
+
+            for sub_category in sub_category_options:
+                sub_category_select.select_by_value(sub_category.get_attribute('value'))
+
+                sleep(0.5)
+
+                sort_by_select = driver.find_element(By.XPATH, '//*[@id="middleplaceholder_maincontent_ddlb3"]')
+
+                if sort_by_select:
+                    sort_by_select = Select(sort_by_select)
+                    sort_by_options = list(sort_by_select.options)[1:]
+                    sort_by_options = [option for option in sort_by_options if 'toxicity' in option.text.lower()]
+
+                    for sort_by_option in sort_by_options:
+                        sort_by_select.select_by_value(sort_by_option.get_attribute('value'))
+
+                        submit_button = driver.find_element(By.XPATH, '//*['
+                                                                      '@id="middleplaceholder_maincontent_btnSubmit2"]')
+
+                        submit_button.click()
+                        sleep(TIME_TO_LOAD_PAGE)
+
+                        extract_table_data(driver.page_source)
