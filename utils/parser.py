@@ -8,7 +8,9 @@ import selenium
 from selenium import webdriver
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
+from tqdm.notebook import tqdm
 
 TIME_TO_LOAD_PAGE = 3
 PUBCHEM_SOURCE_URL = "https://pubchem.ncbi.nlm.nih.gov/"
@@ -24,7 +26,7 @@ def get_search_page(driver: selenium.webdriver, query: str) -> List[str]:
     url = PUBCHEM_SOURCE_URL + "#" + encoded_params
 
     driver.get(url)
-    sleep(2.5)
+    sleep(TIME_TO_LOAD_PAGE)
     source = driver.page_source
 
     soup = BeautifulSoup(source, 'lxml')
@@ -41,6 +43,16 @@ def get_search_page(driver: selenium.webdriver, query: str) -> List[str]:
             compounds_links.append(match.group())
 
     return compounds_links
+
+
+def get_search_pages(queries: List[str], chrome_options) -> List[str]:
+    result = []
+
+    with webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options) as driver:
+        for query in tqdm(queries):
+            result.extend(get_search_page(driver, query))
+
+    return result
 
 
 def get_page_content(driver: selenium.webdriver, url: str) -> str:
@@ -79,7 +91,7 @@ def find_toxicity(content: str) -> Dict[str, Dict[str, int]]:
     return toxicity_dict
 
 
-def extract_table_data(page_source:str):
+def extract_table_data(page_source: str):
     pass
 
 
