@@ -4,6 +4,7 @@ from typing import Dict
 from time import sleep
 from typing import List
 
+import selenium
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
@@ -12,7 +13,7 @@ TIME_TO_LOAD_PAGE = 3
 SOURCE_URL = "https://pubchem.ncbi.nlm.nih.gov/"
 
 
-def get_search_page(query: str) -> List[str]:
+def get_search_page(driver: selenium.webdriver, query: str) -> List[str]:
     params = {
         "query": query
     }
@@ -20,10 +21,9 @@ def get_search_page(query: str) -> List[str]:
     encoded_params = urllib.parse.urlencode(params)
     url = SOURCE_URL + "#" + encoded_params
 
-    with webdriver.Chrome(ChromeDriverManager().install()) as driver:
-        driver.get(url)
-        sleep(2.5)
-        source = driver.page_source
+    driver.get(url)
+    sleep(2.5)
+    source = driver.page_source
 
     soup = BeautifulSoup(source, 'lxml')
     target_divs = soup.find_all('div', {'class': 'f-medium'})
@@ -41,11 +41,10 @@ def get_search_page(query: str) -> List[str]:
     return compounds_links
 
 
-def get_page_content(url: str) -> str:
-    with webdriver.Chrome(ChromeDriverManager().install()) as driver:
-        driver.get(url)
-        sleep(TIME_TO_LOAD_PAGE)
-        content = driver.page_source
+def get_page_content(driver: selenium.webdriver, url: str) -> str:
+    driver.get(url)
+    sleep(TIME_TO_LOAD_PAGE)
+    content = driver.page_source
 
     return content
 
