@@ -3,4 +3,4 @@ data
 .idea
 .DS_store
 */**/*.html
-/__pycache__
+*/**/__pycache__
